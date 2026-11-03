@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deriv 24/7 Algo Terminal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b0e14;
+      --card-bg: #151922;
+      --card-border: #232936;
+      --text-main: #f0f3f6;
+      --text-muted: #8b949e;
+      --green: #26a69a;
+      --green-glow: rgba(38, 166, 154, 0.2);
+      --red: #ef5350;
+      --red-glow: rgba(239, 83, 80, 0.2);
+      --blue: #29b6f6;
+      --accent: #7c4dff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text-main);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      padding: 24px;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 28px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--card-border);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .logo-badge {
+      background: linear-gradient(135deg, #ff444f, #ff6b75);
+      color: white;
+      font-weight: 800;
+      font-size: 14px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      letter-spacing: 0.5px;
+    }
+    .title-group h1 {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+    .title-group p {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(38, 166, 154, 0.1);
+      border: 1px solid rgba(38, 166, 154, 0.3);
+      color: var(--green);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 10px var(--green);
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { transform: scale(0.9); opacity: 0.7; }
+      50% { transform: scale(1.3); opacity: 1; }
+      100% { transform: scale(0.9); opacity: 0.7; }
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .card-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .card-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 26px;
+      font-weight: 700;
+    }
+    .card-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+    .controls {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .btn {
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+    .btn-start {
+      background: var(--green);
+      color: #fff;
+    }
+    .btn-start:hover { opacity: 0.9; }
+    .btn-pause {
+      background: #30363d;
+      color: var(--text-main);
+    }
+    .btn-pause:hover { background: #3d444d; }
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+    .table-container {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    th, td {
+      padding: 14px 16px;
+      text-align: left;
+    }
+    th {
+      background: #11141c;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--card-border);
+    }
+    tr:not(:last-child) td {
+      border-bottom: 1px solid var(--card-border);
+    }
+    .log-box {
+      background: #080a0f;
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      height: 250px;
+      overflow-y: auto;
+      color: #98a2b3;
+    }
+    .log-entry { margin-bottom: 4px; line-height: 1.5; }
+    .log-time { color: #525866; }
+    .badge-buy { background: rgba(38,166,154,0.15); color: var(--green); padding: 2px 6px; border-radius: 4px; font-weight: 600; }
+    .badge-sell { background: rgba(239,83,80,0.15); color: var(--red); padding: 2px 6px; border-radius: 4px; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <div class="logo-badge">DERIV</div>
+        <div class="title-group">
+          <h1>24/7 Algorithmic Trading Terminal</h1>
+          <p>Strategy: Bollinger Bands Mean Reversion + RSI(14)</p>
+        </div>
+      </div>
+      <div id="status-badge" class="status-badge">
+        <div class="pulse-dot"></div>
+        <span id="bot-status-text">SYSTEM ONLINE</span>
+      </div>
+    </header>
+
+    <div class="controls">
+      <button class="btn btn-start" onclick="toggleBot('start')">▶ Run Live Bot</button>
+      <button class="btn btn-pause" onclick="toggleBot('pause')">⏸ Pause Trading</button>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="card-label">Account Balance <span id="account-badge" style="color: var(--blue);">DEMO</span></div>
+        <div class="card-value" id="val-balance">Loading...</div>
+        <div class="card-sub" id="val-account-id">Account: --</div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Volatility 75 Index (R_75) <span style="color: var(--green);">24/7 SYNTHETIC</span></div>
+        <div class="card-value" id="val-v75" style="color: var(--blue);">--</div>
+        <div class="card-sub" id="val-v75-sub">15m Mean Reversion Engine</div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Bitcoin (cryBTCUSD) <span style="color: var(--green);">24/7 CRYPTO</span></div>
+        <div class="card-value" id="val-btc" style="color: #f7931a;">--</div>
+        <div class="card-sub" id="val-btc-sub">Real-Time Deriv Stream</div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Risk Settings <span style="color: var(--accent);">AUTO</span></div>
+        <div class="card-value" style="font-size: 20px;">1.5% Risk / Trade</div>
+        <div class="card-sub">Max Drawdown Cap: 5.0%</div>
+      </div>
+    </div>
+
+    <h2 class="section-title">Active Open Positions (<span id="open-count">0</span>/2)</h2>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Symbol</th>
+            <th>Type</th>
+            <th>Entry Price</th>
+            <th>Current Price</th>
+            <th>Stop Loss</th>
+            <th>Take Profit</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="positions-body">
+          <tr>
+            <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">No active open trades. Monitoring market conditions...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 class="section-title">Live Strategy & Execution Logs</h2>
+    <div class="log-box" id="log-container">
+      <div class="log-entry"><span class="log-time">[System]</span> Initializing web terminal...</div>
+    </div>
+  </div>
+
+  <script>
+    async function fetchStatus() {
+      try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
+        
+        document.getElementById('val-balance').innerText = `$${parseFloat(data.balance).toFixed(2)} ${data.currency}`;
+        document.getElementById('val-account-id').innerText = `ID: ${data.account_id}`;
+        
+        if (data.quotes && data.quotes.R_75) {
+          document.getElementById('val-v75').innerText = parseFloat(data.quotes.R_75).toFixed(4);
+        }
+        if (data.quotes && data.quotes.cryBTCUSD) {
+          document.getElementById('val-btc').innerText = `$${parseFloat(data.quotes.cryBTCUSD).toLocaleString()}`;
+        }
+        
+        document.getElementById('bot-status-text').innerText = data.bot_running ? "SYSTEM ACTIVE (TRADING)" : "SYSTEM PAUSED";
+        
+        // Render positions
+        const tbody = document.getElementById('positions-body');
+        const posKeys = Object.keys(data.positions || {});
+        document.getElementById('open-count').innerText = posKeys.length;
+        
+        if (posKeys.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">No active open trades. Monitoring market conditions...</td></tr>';
+        } else {
+          tbody.innerHTML = posKeys.map(k => {
+            const p = data.positions[k];
+            const badge = p.type === 'BUY' ? 'badge-buy' : 'badge-sell';
+            return `<tr>
+              <td><strong>${k}</strong></td>
+              <td><span class="${badge}">${p.type}</span></td>
+              <td>${p.entry_price.toFixed(2)}</td>
+              <td>${(data.quotes[k] || p.entry_price).toFixed(2)}</td>
+              <td style="color: var(--red);">${p.stop_loss.toFixed(2)}</td>
+              <td style="color: var(--green);">${p.take_profit.toFixed(2)}</td>
+              <td><span style="color: var(--green);">MONITORING (20 SMA Target)</span></td>
+            </tr>`;
+          }).join('');
+        }
+        
+        // Render logs
+        if (data.logs && data.logs.length > 0) {
+          const logBox = document.getElementById('log-container');
+          logBox.innerHTML = data.logs.map(l => `<div class="log-entry">${l}</div>`).join('');
+          logBox.scrollTop = logBox.scrollHeight;
+        }
+      } catch (e) {
+        console.error("Polling error:", e);
+      }
+    }
+
+    async function toggleBot(action) {
+      await fetch(`/api/${action}`, { method: 'POST' });
+      fetchStatus();
+    }
+
+    setInterval(fetchStatus, 2000);
+    fetchStatus();
+  </script>
+</body>
+</html>
