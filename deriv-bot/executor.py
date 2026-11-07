@@ -31,17 +31,21 @@ class OrderExecutor:
         multiplier = sym_cfg.get("multiplier", 100)
         contract_type = "MULTUP" if signal == "BUY" else "MULTDOWN"
 
-        # Calculate absolute SL and TP amount in USD
-        sl_points = abs(price - sl)
-        tp_points = abs(tp - price)
-        sl_usd = round(stake * multiplier * (sl_points / price), 2)
-        tp_usd = round(stake * multiplier * (tp_points / price), 2)
-
-        # Deriv Multipliers enforce stop_loss <= stake
-        if sl_usd >= stake:
-            sl_usd = round(stake * 0.85, 2)
-        if sl_usd < 0.10:
-            sl_usd = 0.10
+        # Calculate SL and TP in USD (1:2 Risk/Reward)
+        if getattr(config, "USE_FIXED_STAKE", False):
+            sl_usd = float(getattr(config, "STOP_LOSS_USD", 0.80))
+            tp_usd = float(getattr(config, "TAKE_PROFIT_USD", 1.60))
+        else:
+            sl_points = abs(price - sl)
+            tp_points = abs(tp - price)
+            sl_usd = round(stake * multiplier * (sl_points / price), 2)
+            tp_usd = round(stake * multiplier * (tp_points / price), 2)
+            if sl_usd >= stake:
+                sl_usd = round(stake * 0.85, 2)
+            if sl_usd < 0.10:
+                sl_usd = 0.10
+            if tp_usd < 0.10:
+                tp_usd = round(stake * 1.5, 2)
 
         if tp_usd < 0.10:
             tp_usd = round(stake * 1.5, 2)
