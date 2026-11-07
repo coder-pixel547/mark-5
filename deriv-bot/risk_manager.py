@@ -34,9 +34,12 @@ class RiskManager:
 
     def calculate_stake(self, symbol: str, entry_price: float, stop_loss: float) -> float:
         """
-        Calculates dynamic position stake based on 1.5% account equity risk.
-        Ensures stake adheres to Deriv minimums.
+        Calculates position stake. If USE_FIXED_STAKE is enabled, returns fixed stake ($1.00).
+        Otherwise dynamically scales based on 1.5% account equity risk.
         """
+        if getattr(config, "USE_FIXED_STAKE", False):
+            return float(getattr(config, "FIXED_STAKE_USD", 1.00))
+
         sym_cfg = config.SYMBOLS.get(symbol, {})
         min_stake = sym_cfg.get("min_stake", 0.35)
         
