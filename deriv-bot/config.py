@@ -25,7 +25,7 @@ SYMBOLS = {
         "symbol": "cryBTCUSD",
         "min_stake": 1.0,
         "default_stake": 2.0,
-        "multiplier": 50,
+        "multiplier": 100,
     }
 }
 
