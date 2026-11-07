@@ -1,16 +1,17 @@
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Callable
 import config
 
 logger = logging.getLogger("OrderExecutor")
 
 class OrderExecutor:
-    def __init__(self, client, risk_manager):
+    def __init__(self, client, risk_manager, log_callback: Optional[Callable[[str], None]] = None):
         self.client = client
         self.risk_manager = risk_manager
+        self.log = log_callback or (lambda msg: None)
 
     async def execute_trade(self, symbol: str, signal_data: Dict[str, Any]) -> bool:
-        """Executes a BUY or SELL trade via Deriv Multiplier / CFD contract."""
+        """Executes a BUY or SELL trade via Deriv Multiplier contract."""
         signal = signal_data["signal"]
         price = signal_data["price"]
         sl = signal_data["stop_loss"]
@@ -19,7 +20,9 @@ class OrderExecutor:
         # Check risk limits
         can_trade, reason = self.risk_manager.can_open_trade(symbol)
         if not can_trade:
-            logger.warning(f"Trade blocked by Risk Manager: {reason}")
+            msg = f"Trade blocked by Risk Manager: {reason}"
+            logger.warning(msg)
+            self.log(f"<span style='color: orange;'>{msg}</span>")
             return False
 
         # Calculate stake
@@ -34,19 +37,30 @@ class OrderExecutor:
         sl_usd = round(stake * multiplier * (sl_points / price), 2)
         tp_usd = round(stake * multiplier * (tp_points / price), 2)
 
-        logger.info(f"==> Placing {signal} on {symbol} | Stake: ${stake:.2f} | Mult: x{multiplier} | SL: -${sl_usd:.2f} | TP: +${tp_usd:.2f}")
+        # Deriv Multipliers enforce stop_loss <= stake
+        if sl_usd >= stake:
+            sl_usd = round(stake * 0.85, 2)
+        if sl_usd < 0.10:
+            sl_usd = 0.10
 
-        # Check if authorized for real/demo execution
+        if tp_usd < 0.10:
+            tp_usd = round(stake * 1.5, 2)
+
+        info_msg = f"Placing {signal} on {symbol} | Stake: ${stake:.2f} | x{multiplier} | SL: -${sl_usd:.2f} | TP: +${tp_usd:.2f}"
+        logger.info(info_msg)
+        self.log(info_msg)
+
+        # Check if authorized for execution
         if self.client.is_authorized:
             try:
-                # 1. Get contract proposal
+                # 1. Get contract proposal (requires underlying_symbol for Multipliers)
                 proposal_req = {
                     "proposal": 1,
-                    "amount": stake,
+                    "amount": round(stake, 2),
                     "basis": "stake",
                     "contract_type": contract_type,
                     "currency": self.client.currency,
-                    "symbol": symbol,
+                    "underlying_symbol": symbol,
                     "multiplier": multiplier,
                     "limit_order": {
                         "stop_loss": sl_usd,
@@ -55,7 +69,9 @@ class OrderExecutor:
                 }
                 prop_res = await self.client.send_request(proposal_req)
                 if "error" in prop_res:
-                    logger.error(f"Proposal error: {prop_res['error'].get('message')}")
+                    err_msg = prop_res["error"].get("message", "Unknown error")
+                    logger.error(f"Proposal error: {err_msg}")
+                    self.log(f"<span style='color: red;'>Proposal error: {err_msg}</span>")
                     return False
 
                 proposal_id = prop_res.get("proposal", {}).get("id")
@@ -63,14 +79,18 @@ class OrderExecutor:
                 # 2. Buy contract
                 buy_res = await self.client.send_request({
                     "buy": proposal_id,
-                    "price": stake
+                    "price": round(stake, 2)
                 })
                 if "error" in buy_res:
-                    logger.error(f"Buy error: {buy_res['error'].get('message')}")
+                    err_msg = buy_res["error"].get("message", "Unknown error")
+                    logger.error(f"Buy error: {err_msg}")
+                    self.log(f"<span style='color: red;'>Buy error: {err_msg}</span>")
                     return False
 
                 contract_id = buy_res.get("buy", {}).get("contract_id")
-                logger.info(f"SUCCESS: Order executed on Deriv! Contract ID: {contract_id}")
+                success_msg = f"TRADE EXECUTED! Contract ID: {contract_id} | Type: {signal} {symbol} | Stake: ${stake:.2f}"
+                logger.info(success_msg)
+                self.log(f"<span style='color: #4ade80; font-weight: bold;'>{success_msg}</span>")
 
                 self.risk_manager.register_position(symbol, {
                     "contract_id": contract_id,
@@ -84,11 +104,15 @@ class OrderExecutor:
                 return True
 
             except Exception as e:
-                logger.error(f"Exception during order placement: {e}")
+                err_msg = f"Exception during order placement: {e}"
+                logger.error(err_msg)
+                self.log(f"<span style='color: red;'>{err_msg}</span>")
                 return False
         else:
             # Paper trading / dry run simulation
-            logger.info(f"[PAPER TRADING] Simulated {signal} order placed for {symbol} @ {price:.2f}")
+            sim_msg = f"[PAPER] Simulated {signal} order for {symbol} @ {price:.2f}"
+            logger.info(sim_msg)
+            self.log(sim_msg)
             self.risk_manager.register_position(symbol, {
                 "contract_id": "SIM_PAPER_1",
                 "type": signal,
@@ -138,11 +162,14 @@ class OrderExecutor:
                 reason = "Mean Reversion Target Reached (20 SMA)"
 
         if should_close:
-            logger.info(f"<== Closing {pos_type} position on {symbol} @ {current_price:.2f} ({reason})")
-            if self.client.is_authorized and pos.get("contract_id", "").isdigit():
+            close_msg = f"Closing {pos_type} on {symbol} @ {current_price:.2f} ({reason})"
+            logger.info(close_msg)
+            self.log(f"<span style='color: #facc15;'>{close_msg}</span>")
+            contract_id = pos.get("contract_id")
+            if self.client.is_authorized and contract_id and str(contract_id).isdigit():
                 try:
                     await self.client.send_request({
-                        "sell": pos["contract_id"],
+                        "sell": contract_id,
                         "price": 0
                     })
                 except Exception as e:
