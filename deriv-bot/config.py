@@ -16,7 +16,7 @@ SYMBOLS = {
     "R_75": {
         "name": "Volatility 75 Index",
         "symbol": "R_75",
-        "min_stake": 0.35,  # Deriv minimum stake for synthetics ($)
+        "min_stake": 1.0,
         "default_stake": 1.0,
         "multiplier": 100,  # Multiplier leverage if trading Multipliers
     },
@@ -24,10 +24,16 @@ SYMBOLS = {
         "name": "Bitcoin / USD",
         "symbol": "cryBTCUSD",
         "min_stake": 1.0,
-        "default_stake": 2.0,
+        "default_stake": 1.0,
         "multiplier": 100,
     }
 }
+
+# Position Sizing & 1:2 Risk-Reward
+USE_FIXED_STAKE = True
+FIXED_STAKE_USD = 1.00   # $1.00 USD fixed stake per trade
+STOP_LOSS_USD = 0.80     # Risk $0.80 on $1 stake
+TAKE_PROFIT_USD = 1.60   # Reward $1.60 on $1 stake (Exact 1:2 Risk/Reward ratio)
 
 # Strategy Parameters (Bollinger Bands Mean Reversion)
 TIMEFRAME_SECONDS = 900  # 15-Minute candles
