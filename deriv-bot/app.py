@@ -52,7 +52,7 @@ class WebTradingBot:
             tp_atr_mult=config.TAKE_PROFIT_ATR_MULT
         )
         self.risk_manager = RiskManager(initial_balance=10000.0)
-        self.executor = OrderExecutor(self.client, self.risk_manager)
+        self.executor = OrderExecutor(self.client, self.risk_manager, log_callback=add_log)
         self.running = True
 
     async def run_loop(self):
@@ -127,7 +127,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 async def serve_dashboard():
     return FileResponse(os.path.join(BASE_DIR, "templates", "index.html"))
 
@@ -147,6 +147,6 @@ async def pause_bot():
     add_log("Bot paused by user via web terminal.")
     return {"status": "paused"}
 
-@app.get("/healthz")
+@app.api_route("/healthz", methods=["GET", "HEAD"])
 async def health_check():
     return {"status": "healthy", "service": "deriv-trading-bot"}
